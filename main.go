@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -43,10 +44,18 @@ func main() {
 				continue
 			}
 
+			weather, err := owClient.Weather(coordinates.Lat, coordinates.Lon)
+			if err != nil {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Erro ao pegar a temperatura")
+				msg.ReplyToMessageID = update.Message.MessageID
+				bot.Send(msg)
+				continue
+			}
+
 			msg := tgbotapi.NewMessage(
 				update.Message.Chat.ID,
-				fmt.Sprintf("Coordenadas para %s:\nLatitude: %.2f\nLongitude: %.2f",
-					update.Message.Text, coordinates.Lat, coordinates.Lon),
+				fmt.Sprintf("A temperatura em %s é de %d °C.",
+					update.Message.Text, int(math.Round(weather.Temp))),
 			)
 			msg.ReplyToMessageID = update.Message.MessageID
 
