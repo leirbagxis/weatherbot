@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
+	"github.com/leirbagxis/weatherbot/client/openweather"
 )
 
 func main() {
@@ -28,11 +30,24 @@ func main() {
 
 	updates := bot.GetUpdatesChan(u)
 
+	owClient := openweather.New(os.Getenv("OPENWEATHERAPI_KEY"))
+
 	for update := range updates {
 		if update.Message != nil { // If we got a message
 			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+			coordinates, err := owClient.Coordinates(update.Message.Text)
+			if err != nil {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Erro ao pegar as coordenadas")
+				msg.ReplyToMessageID = update.Message.MessageID
+				bot.Send(msg)
+				continue
+			}
 
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+			msg := tgbotapi.NewMessage(
+				update.Message.Chat.ID,
+				fmt.Sprintf("Coordenadas para %s:\nLatitude: %.2f\nLongitude: %.2f",
+					update.Message.Text, coordinates.Lat, coordinates.Lon),
+			)
 			msg.ReplyToMessageID = update.Message.MessageID
 
 			bot.Send(msg)
